@@ -88,7 +88,7 @@ def my_put_text(img, text, coords):
     cv2.putText(img, text, coords, cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
 
 
-def draw_markers(img, corners, ids, rejected, draw_all_corners=False):
+def draw_markers(img, corners, ids, rejected, draw_top_left=False):
     """ Draw ids and corners of detected markers in-place
 
     :param img_copy: Image with markers
@@ -121,12 +121,9 @@ def draw_markers(img, corners, ids, rejected, draw_all_corners=False):
             cv2.circle(img_copy, (center_x, center_y), 4, (0, 0, 255), -1)
             # draw the marker ID on the image
             my_put_text(img_copy, str(marker_id), (top_left[0], top_left[1] - 15))
-            if draw_all_corners:
-                # draw the corner names
+            # draw the top left corner
+            if draw_top_left:
                 my_put_text(img_copy, "top left", (top_left[0] - 15, top_left[1]))
-                my_put_text(img_copy, "top right", (top_right[0] - 15, top_right[1]))
-                my_put_text(img_copy, "bottom left", (bottom_left[0] - 15, bottom_left[1]))
-                my_put_text(img_copy, "bottom right", (bottom_right[0] - 15, bottom_right[1]))
         return img_copy
 
 
@@ -192,11 +189,10 @@ def main(ref_img_path, save_path, plate_by_aruco, dist_left, dist_up, plate_widt
     img = cv2.imread(ref_img_path)
     corners, ids, rejected = localize_aruco(img, aruco_dict)
 
-    if ids == None:
+    if type(ids) is None:
         raise RuntimeError("None of the markers were detected")
 
-    drawn_img = img.copy()
-    drawn_img = draw_markers(img, corners, ids, rejected)
+    drawn_img = draw_markers(img, corners, ids, rejected, draw_top_left=True)
 
     plate_corners = None
     if plate_by_aruco:
@@ -224,7 +220,7 @@ def main(ref_img_path, save_path, plate_by_aruco, dist_left, dist_up, plate_widt
             plate_corners = localize_plate_corners(img, dist_left, dist_up, plate_width, plate_height, marker_size, aruco_dict)
 
     if plate_corners is not None:
-        drawn_img = draw_markers(drawn_img, plate_corners, [], None, draw_all_corners=True)
+        drawn_img = draw_markers(drawn_img, plate_corners, [""], None)
         # let user know whether the localized plate corners are within the image or not
         if coords_inside_bounds(plate_corners, img.shape[:2]):
             plate_corners_str = str(plate_corners)
